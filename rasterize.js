@@ -180,23 +180,36 @@ function setupShaders() {
 function renderTriangles() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear frame/depth buffers
     
-    // define the modeling matrix for the first set 
-    inputTriangles[0].mMatrix = mat4.create(); // modeling mat for tri set
-    var setCenter = vec3.fromValues(.25,.75,0);  // center coords of tri set 
-    mat4.fromTranslation(inputTriangles[0].mMatrix,vec3.negate(vec3.create(),setCenter)); // translate to origin
-    mat4.multiply(inputTriangles[0].mMatrix,
-                  mat4.fromRotation(mat4.create(),Math.PI/2,vec3.fromValues(0,0,1)),
-                  inputTriangles[0].mMatrix); // rotate 90 degs
-    mat4.multiply(inputTriangles[0].mMatrix,
-                  mat4.fromTranslation(mat4.create(),setCenter),
-                  inputTriangles[0].mMatrix); // move back to center
-        
-    // define the modeling matrix for the second set
-    inputTriangles[1].mMatrix = mat4.create();
-    
+    // define the modeling matrix for the first set
+    var setCenter = vec3.fromValues(.25,.75,0);  // pivot for the triangle
+    var m0 = mat4.create();
+    mat4.fromTranslation(m0, vec3.negate(vec3.create(), setCenter)); // translate pivot to origin
+    mat4.multiply(m0,
+                  mat4.fromRotation(mat4.create(), 3*Math.PI/4, vec3.fromValues(0,0,1)),
+                  m0); // rotate 135 degs
+    mat4.multiply(m0,
+                  mat4.fromTranslation(mat4.create(), vec3.fromValues(.25-1, .75-1, 0)),
+                  m0); // move back to pivot, plus the (-1,-1) shift
+    inputTriangles[0].mMatrix = m0;
+
+    // model matrix for the second set (square): scale 2x, rotate 45 degs about its center, then translate
+    var sqCenter = vec3.fromValues(.25,.25,0);   // center of the square
+    var m1 = mat4.create();
+    mat4.fromTranslation(m1, vec3.negate(vec3.create(), sqCenter)); // translate center to origin
+    mat4.multiply(m1,
+                  mat4.fromScaling(mat4.create(), vec3.fromValues(2,2,1)),
+                  m1); // scale x and y by 2 (z stays 1)
+    mat4.multiply(m1,
+                  mat4.fromRotation(mat4.create(), Math.PI/4, vec3.fromValues(0,0,1)),
+                  m1); // rotate 45 degs
+    mat4.multiply(m1,
+                  mat4.fromTranslation(mat4.create(), vec3.fromValues(-.25, -.5, 0)),
+                  m1); // move the center to (-0.25, -0.5)
+    inputTriangles[1].mMatrix = m1;
+
     for (var whichTriSet=0; whichTriSet<numTriangleSets; whichTriSet++) { 
         
-        // pass modeling matrix for set to shadeer
+        // pass modeling matrix for set to shader
         gl.uniformMatrix4fv(modelMatrixULoc, false, inputTriangles[whichTriSet].mMatrix);
 
         // vertex buffer: activate and feed into vertex shader
